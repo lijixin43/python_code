@@ -1,0 +1,39 @@
+
+def extract_manifest_port(json):
+    json_m_port = {}
+    json_m_port['bill_no'] = json["MANIFEST_LIST_NEW"][0]["BILL_NO"]
+    json_m_port["manifest_id"] = json["MANIFEST_HEAD_NEW"][0]["MANIFEST_ID"]
+    json_m_port["load_code_2"] = json["MANIFEST_LIST_NEW"]["LOAD_CODE"][0:2]
+    json_m_port["trn_place_code_2"] = json["MANIFEST_LIST_NEW"]["TRN_PLACE_CODE"][0:2]
+    return {"status": '1', "data": json_m_port}
+
+def extract_entry_port(json):
+    json_e_port = {}
+    json_e_port["entry_id"] = json["entryHeadA"]["entryId"]
+    json_e_port["ie_n"] = json["entryHeadA"]["iEport"][0:2]
+    con = cx_Oracle.connect("brgg2_qdzb", "qazwsx12", "10.99.87.136:1521/ora11g")
+    cur = con.cursor()
+    cur.execute("select is_not_986 from i_e_port_join where i_e_port=:i_e_port",json["entryHeadA"]["iEport"])
+    rows = cur.fetchone()
+    json_e_port["is_not_986"] = rows[0]
+    cur.close
+    #
+    con = cx_Oracle.connect("brgg2_qdzb", "qazwsx12", "10.99.87.136:1521/ora11g")
+    cur1 = con.cursor()
+    cur1.execute("select cyratio_180,cyratio_30 from ie_port_hs_join where i_e_port=:i_e_port and code_ts_6 = :code_ts_6", [json["entryHeadA"]["iEport"],json_e_port["entryListA"][0]["codeTs"][0:6]])
+    rows1 = cur1.fetchone()
+    json_e_port["cyratio_180"] = rows1[0]
+    json_e_port["cyratio_30"] = rows1[1]
+    cur1.close
+    json_e_port["de_n"] = json["entryHeadA"]["declPort"][0:2]
+    json_e_port["decl_port"] = json["entryHeadA"]["declPort"]
+    con = cx_Oracle.connect("brgg2_qdzb", "qazwsx12", "10.99.87.136:1521/ora11g")
+    cur2 = con.cursor()
+    cur2.execute(
+        "select entryid_num_180,entryid_num_30 from decl_port_join where decl_port=:decl_port ",
+        json["entryHeadA"]["declPort"])
+    rows2 = cur2.fetchone()
+    json_e_port["entryid_num_180"] = rows2[0]
+    json_e_port["entryid_num_30"] = rows2[1]
+    cur2.close
+    return  {"status": '1', "data": json_e_port}
